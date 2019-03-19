@@ -20,7 +20,7 @@ During the backup, BBR stops the Cloud Controller API and the Cloud Controller w
     <li><strong>Compatibility:</strong> A BBR backup can only be restored to environments matching its source environment. 
       To ensure that a restore environment is compatible with a backup see <a href="#restore-compatibility">Compatibility of Restore</a>.</li>
     <li><strong>Failed Restrore:</strong> Restore is a destructive operation. BBR is designed to restore PCF after a disaster. 
-      If restore fails, the environment might be left in an unusable state and require re-provisioning. For more information, 
+      If a restore fails, the environment might be left in an unusable state and require re-provisioning. For more information, 
       see <a href="restore-pcf-bbr.html">Restoring Pivotal Cloud Foundry from Backup with BBR</a>.</li>      
     <li><strong>Service Data:</strong> BBR does not back up any service data.</li>
     <li><strong>API Outage:</strong> The Cloud Controller API does not send or receive calls during PCF restoration.</li>
@@ -223,8 +223,6 @@ Keep in mind the following when backing up services:
 
 ## <a id='workflow'></a> Backup Workflow
 
-To install BBR, you download the `bbr` executable and copy it to a jumpbox. Once installed on your jumpbox, you can run BBR commands, specifying the name of the BOSH deployment.
-
 BBR examines the jobs in the BOSH deployment, and triggers the scripts in the following stages:
 
 1. **Pre-backup lock**: The pre-backup lock scripts locks the job so backups are consistent across the cluster.
@@ -239,9 +237,6 @@ The following diagram shows a sample backup flow.
 
 <%= image_tag('backup-flow.png') %>
 
-Before using BBR, follow the instructions in [Setting Up Your Jumpbox for BBR](system-setup-bbr.html).
-
-
 ## <a id='prepare'></a> Preparing to Create Your Backup
 
 ### <a id='setup-jumpbox'></a> Step 1: Set Up Your Jumpbox
@@ -250,11 +245,12 @@ You must have a jumpbox before you can install BBR to the jumpbox. A jumpbox is 
 hardened server on your network that provides a controlled means of access to the VMs other
 computers on your network.
 
-See the [jumpbox-deployment](https://github.com/cloudfoundry/jumpbox-deployment) repository in GitHub for an example jumpbox deployment.
+Pivotal recommends using the Ops Manager VM as your jumpbox. If you use the Ops Manager VM as your jumpbox, the path to the root Certificate Authority (CA) certificate is `/var/tempest/workspaces/default/root_ca_certificate`. You must have this path to run BBR commands.
 
-Prepare your jumpbox for BBR by following the steps in [Setting Up Your Jumpbox for BBR](system-setup-bbr.html).
+As an alternative to using the Ops Manager VM as your jumpbox, you can do the following:
 
-<p class="note"><strong>Note:</strong> Pivotal recommends that you regularly update the BBR binary on your jumpbox to the latest version. See <a href="system-setup-bbr.html#scp">Transfer BBR Binary to Your Jumpbox</a> in <em>Setting Up Your Jumpbox for BBR</em> for more information.</p>
+* Use Concourse to back up a PCF installation using BBR. For more information, see the [BBR PCF Pipeline Tasks](https://github.com/pivotal-cf/bbr-pcf-pipeline-tasks) GitHub repo.
+* Configure a custom jumpbox. For more information, see [Configuring a custom jumpbox for BBR](https://community.pivotal.io/s/article/Configuring-a-Custom-Jumpbox-for-BBR) in the Pivotal Support Knowledge Base.
 
 ### <a id='encrypt-key'></a> Step 2: Record the Cloud Controller Database Encryption Credentials
 
@@ -299,11 +295,11 @@ You can establish a connection to your jumpbox in one of the following ways.
 * [Connect with SSH](#ssh)
 * [Connect with BOSH_ALL_PROXY](#bosh-all-proxy)
 
-For general information about the jumpbox, see [Setting Up Your Jumpbox for BBR](system-setup-bbr.html).
-
 <a id='ssh'></a> **Connect with SSH**
 
-SSH into your jumpbox.
+If you are using the Ops Manager VM as your jumpbox, see the [Log in to the Ops Manager VM with SSH](../trouble-advanced.html#ssh) section of <em>Advanced Troubleshooting with the BOSH CLI</em> for information on how to use SSH to connect to the Ops Manager VM.
+
+Otherwise, run the following command to SSH into your jumpbox:
 
 ```
 ssh -i LOCAL-PATH-TO-JUMPBOX-PRIVATE-KEY JUMPBOX-USER@JUMPBOX-ADDRESS
@@ -437,9 +433,7 @@ Perform the following steps to check that your BOSH Director is reachable and ha
     For more information, see [Using the Ops Manager API](../ops-man-api.html).
     * `DEPLOYMENT-NAME` is the deployment name retrieved in 
     [Step 6: Identify Your Deployment](#identify-deployment).
-    * `PATH-TO-BOSH-SERVER-CERTIFICATE` is the path to the Certificate Authority 
-    (CA) certificate for the BOSH Director. 
-    For more information, see [Ensure BOSH Director Certificate Availability](./system-setup-bbr.html#root-ca-cert).
+    * `PATH-TO-BOSH-SERVER-CERTIFICATE` is the path to the root CA certificate for the BOSH Director. If you are using the Ops Manager VM as your jumpbox, the path is `/var/tempest/workspaces/default/root_ca_certificate`. 
 
 1. If the pre-backup check succeeds, continue to [Create Your Backup](#procedure) below. If the
 pre-backup check fails, the deployment you selected might not have the correct backup scripts, or
@@ -551,16 +545,12 @@ backup-cleanup
 
 <div class="note"><strong>Notes:</strong>
   <ul>
-    <li>Backing up PAS can take more than 5 minutes, and can take considerably longer with larger blobstores or slow network connections. 
-    The backup also incurs Cloud Controller downtime during which users are unable to push, scale, or delete apps. Your apps are not affected.</li>
-    <li>Because the BBR <code>backup</code> command can take a long time to complete, Pivotal recommends you run it independently of the SSH session, 
-      so that the process can continue running even if your connection to the jumpbox fails. The command above uses <code>nohup</code> but you could 
-      also run the command in a <code>screen</code> or <code>tmux</code> session.</li>
+    <li>Backing up PAS can take more than 5 minutes, and can take considerably longer with larger blobstores or slow network connections. The backup also incurs Cloud Controller downtime during which users are unable to push, scale, or delete apps. Your apps will not be affected.</li>
+    <li>Because the BBR <code>backup</code> command can take a long time to complete, Pivotal recommends you run it independently of the SSH session, so that the process can continue running even if your connection to the jumpbox fails. The command above uses <code>nohup</code> but you could also run the command in a <code>screen</code> or <code>tmux</code> session.</li>
   </ul>
 </div>
 
-1. (Optional) If you are not using an internal blobstore or a versioned S3-compatible external blobstore, create a copy of the blobstore with your 
-IaaS specific tool. Your blobstore backup might be slightly inconsistent with your PAS backup depending on the duration of time between performing the backups.
+1. (Optional) If you are not using an internal blobstore or a versioned S3-compatible external blobstore, create a copy of the blobstore with your IaaS specific tool. Your blobstore backup may be slightly inconsistent with your PAS backup depending on the duration of time between performing the backups.
 
 1. Run the BBR `backup` command to back up your PAS deployment:
 
@@ -619,8 +609,7 @@ If the command fails, do the following:
 
 After creating your backup successfully, perform the following steps:
 
-1. Move the backup artifacts off the jumpbox to your preferred storage space. The backup created by BBR consists of a directory 
-with the backup artifacts and metadata files. Pivotal recommends compressing and encrypting the files.
+1. Move the backup artifacts off the jumpbox to your preferred storage space. The backup created by BBR consists of a folder with the backup artifacts and metadata files. Pivotal recommends compressing and encrypting the files.
 
 1. Make redundant copies of your backup artifacts and store them in multiple locations to minimize the risk of losing backups in the event of a disaster.
 
@@ -634,11 +623,8 @@ To validate your backup, follow the instructions below:
 
 <div class="note warning"><strong>WARNING:</strong>
   <ul>
-    <li><strong>The VMs and disks from the backed-up BOSH Director must not be visible to the new BOSH Director</strong> when validating your backup. 
-    Pivotal recommends that you deploy the new BOSH Director to a different IaaS network and account than the VMs and disks of the backed-up BOSH Director.</li>
-    <li><strong>Data services outside of PCF might produce unexpected side effects during restoration.</strong> 
-    The services will try to connect to those data services when you restore to a new environment. For example, consider an app that processes mail queues and connects to an external database. 
-    When you validate your backup in a test environment, the app might start processing the queue, and this work might be lost.</li>
+    <li><strong>The VMs and disks from the backed-up BOSH Director should not be visible to the new BOSH Director</strong> when validating your backup. As a result, Pivotal recommends that you deploy the new BOSH Director to a different IaaS network and account than the VMs and disks of the backed-up BOSH Director.</li>
+    <li><strong>Data services outside of PCF may produce unexpected side effects during restoration.</strong> The services will try to connect to those data services when you restore to a new environment. For example, consider an app that processes mail queues and connects to an external database. When you validate your backup in a test environment, the app may start processing the queue, and this work may be lost.</li>
   </ul>
 </div>
 
@@ -714,6 +700,4 @@ If you need to cancel a backup, perform the following steps:
 
 ## <a id="gdpr"></a> European Union's General Data Protection Regulation (GDPR)
 
-Backup artifacts might contain personal and other data covered by the European Union's _General Data Protection Regulation (GDPR)_. 
-For example, a PAS backup could contain user email addresses. As such, handle backup artifacts in accordance with organizational policies 
-and applicable laws as they pertain to security, confidentiality, and privacy.
+Backup artifacts may contain data covered by the European Union's _General Data Protection Regulation (GDPR)_. Please be mindful that any backup artifacts may contain personal data. For example, a backup of PAS could contain user email addresses. As such, backup artifacts should be handled in accordance with organizational policies and applicable laws as they pertain to security, confidentiality, and privacy.
