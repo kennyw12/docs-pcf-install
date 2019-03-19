@@ -229,7 +229,7 @@ BBR examines the jobs in the BOSH deployment, and triggers the scripts in the fo
 1. **Backup**: The backup script backs up the release.
 1. **Post-backup unlock**: The post-backup unlock script unlocks the job after the backup is complete.
 
-Scripts in the same stage are all triggered together. For instance, BBR triggers all pre-backup lock scripts before any backup scripts. Scripts within a stage can be triggered in any order.
+Scripts in the same stage are all triggered together. For instance, BBR triggers all pre-backup lock scripts before any backup scripts. Scripts within a stage may be triggered in any order.
 
 The backup artifacts are drained to the jumpbox, where the operator can transfer them to storage and use them to restore PCF.
 
@@ -260,7 +260,7 @@ Perform the following steps to retrieve the Cloud Controller Database encryption
 
 1. Select PAS **Credentials** and locate the Cloud Controller section.
 
-1. Record the **Db Encryption Credentials**. You must provide these credentials when you contact [Pivotal Support](https://support.pivotal.io) for help with restoring your installation.
+1. Record the **Db Encryption Credentials**. You must provide these credentials when you contact [Pivotal Support](https://support.pivotal.io) for assistance restoring your installation.
 
   <%= image_tag("ccdb-encrypt-creds.png") %>
 
@@ -624,7 +624,7 @@ To validate your backup, follow the instructions below:
 <div class="note warning"><strong>WARNING:</strong>
   <ul>
     <li><strong>The VMs and disks from the backed-up BOSH Director should not be visible to the new BOSH Director</strong> when validating your backup. As a result, Pivotal recommends that you deploy the new BOSH Director to a different IaaS network and account than the VMs and disks of the backed-up BOSH Director.</li>
-    <li><strong>Data services outside of PCF may produce unexpected side effects during restoration.</strong> The services will try to connect to those data services when you restore to a new environment. For example, consider an app that processes mail queues and connects to an external database. When you validate your backup in a test environment, the app may start processing the queue, and this work may be lost.</li>
+    <li><strong>Data services outside of PCF might produce unexpected side effects during restoration.</strong> The services will try to connect to those data services when you restore to a new environment. For example, consider an app that processes mail queues and connects to an external database. When you validate your backup in a test environment, the app might start processing the queue, and this work might be lost.</li>
   </ul>
 </div>
 
@@ -700,4 +700,6 @@ If you need to cancel a backup, perform the following steps:
 
 ## <a id="gdpr"></a> European Union's General Data Protection Regulation (GDPR)
 
-Backup artifacts may contain data covered by the European Union's _General Data Protection Regulation (GDPR)_. Please be mindful that any backup artifacts may contain personal data. For example, a backup of PAS could contain user email addresses. As such, backup artifacts should be handled in accordance with organizational policies and applicable laws as they pertain to security, confidentiality, and privacy.
+Backup artifacts might contain personal and other data covered by the European Union's _General Data Protection Regulation (GDPR)_. 
+For example, a PAS backup could contain user email addresses. As such, handle backup artifacts in accordance with organizational policies 
+and applicable laws as they pertain to security, confidentiality, and privacy.
